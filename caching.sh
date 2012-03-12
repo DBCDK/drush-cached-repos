@@ -5,7 +5,7 @@ find_git_repos() {
   RETURN=$( cat $1 | sed -e "/\.git[\"']* *$/ ! d; s/.*= *[\"']*\([^'\"]*\)[\"']* *$/\1/" )
 }
 
-# Download git repository or fetch changi
+# Download git repository or fetch changes
 download_git() {
   local git=$1
   local destination=$2
@@ -24,6 +24,8 @@ download_git() {
   fi
 }
 
+# Substitute :// with -
+# and translate @ with - and : with /
 translate_git_to_path() {
   local git=$1
   RETURN=$( echo $git | sed "s/:\/\//-/; y/@:/-\//" )
