@@ -29,3 +29,5 @@ do
   REPOS_DONE="$REPOS_DONE $REPO"
 done
 
+# @todo do for the downloaded repos also
+# echo Repos: $REPOS_DONE

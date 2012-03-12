@@ -51,9 +51,9 @@ repo_name() {
 }
 
 parse_makefile() {
-  makefile=$1
+  local makefile=$1
   shift
-  exclude=$@
+  local exclude=$@
   local repos_downloaded
   find_includes $makefile
   local includes=$RETURN
@@ -67,7 +67,7 @@ parse_makefile() {
       inc=${inc#$dirname/*}
     fi
 
-    parse_makefile $inc $repos_downloaded
+    parse_makefile $inc $exclude $repos_downloaded
     repos_downloaded="$repos_downloaded $RETURN"
 
     if [ $(dirname $inc) == '.' ]; then
@@ -80,7 +80,7 @@ parse_makefile() {
 
   for repo in $repos
   do
-    if not_up_to_date $repo $exclude ; then
+    if not_up_to_date $repo $exclude $repos_downloaded ; then
       translate_git_to_path $repo
       local path=$RETURN
       download_git $repo $path
