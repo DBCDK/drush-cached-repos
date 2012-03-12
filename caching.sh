@@ -17,6 +17,11 @@ find_git_repos() {
   RETURN=$(cat $1 | sed -e "/\.git[\"']* *$/ ! d; s/.*= *[\"']*\([^'\"]*\)[\"']* *$/\1/")
 }
 
+# Find includes in make file
+find_includes() {
+  RETURN=$(cat $1 | sed -e "/^includes\[/ ! d; s/^includes\[\] *= *[\"']*\(.*\)[\"']* *$/\1/")
+}
+
 # Download git repository or fetch changi
 download_git() {
   local git=$1
@@ -47,8 +52,29 @@ repo_name() {
 
 parse_makefile() {
   makefile=$1
-  exclude=$2
+  shift
+  exclude=$@
   local repos_downloaded
+  find_includes $makefile
+  local includes=$RETURN
+
+  for inc in $includes
+  do
+    # remote make file
+    if [[ $(expr "$inc" : 'ftps*://') || $(expr "$inc" : 'https*://') ]]; then
+      wget $inc
+      dirname=$(dirname $inc)
+      inc=${inc#$dirname/*}
+    fi
+
+    parse_makefile $inc $repos_downloaded
+    repos_downloaded="$repos_downloaded $RETURN"
+
+    if [ $(dirname $inc) == '.' ]; then
+      rm -f $inc
+    fi
+  done
+
   find_git_repos $makefile
   local repos=$RETURN
 
@@ -58,8 +84,7 @@ parse_makefile() {
       translate_git_to_path $repo
       local path=$RETURN
       download_git $repo $path
-      repo_name $repo
-      repos_downloaded="$repos_downloaded $RETURN"
+      repos_downloaded="$repos_downloaded $repo"
     fi
   done
 
