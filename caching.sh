@@ -1,11 +1,11 @@
 #!/bin/bash
 
-# escaping special characters for grep
+# Escaping special characters for grep
 escape() {
   echo "$1" | sed 's/\([\.\$\*]\)/\\\1/g'
 }
 
-# is first argument in rest of arguments
+# Is first argument amoung rest of arguments then git repository up to date
 not_up_to_date() {
   local item=$1
   shift
@@ -29,8 +29,8 @@ download_git() {
 
   if [ -d $destination ]; then
     pushd $destination > /dev/null
-    echo Fetching into bare repository $destination
-    git fetch
+    echo Updating mirror: $destination
+    git fetch -q --all
     git update-server-info
     popd > /dev/null
   else
@@ -48,10 +48,12 @@ translate_git_to_path() {
   RETURN=$( echo $git | sed "s/:\/\//-/; y/@:/-\//" )
 }
 
+# Extract repository name from url
 repo_name() {
   RETURN=$(echo "$1" | sed "s/.*\/\([^\/]*\)\.git$/\1/")
 }
 
+# Parse Drush makefile and included makefiles
 parse_makefile() {
   local makefile=$1
   shift
@@ -64,7 +66,7 @@ parse_makefile() {
   do
     # remote make file
     if [[ $(expr "$inc" : 'ftps*://') || $(expr "$inc" : 'https*://') ]]; then
-      wget $inc
+      wget -nv $inc
       dirname=$(dirname $inc)
       inc=${inc#$dirname/*}
     fi
@@ -93,13 +95,56 @@ parse_makefile() {
   RETURN=$repos_downloaded
 }
 
-main() {
-  local makefiles=$@
+# Checkout makefile from each branch and process it
+process_repo() {
+  repo_name $REPO
+  name=$RETURN
+  translate_git_to_path $REPO
+  path=$RETURN
 
-  for makefile in $makefiles
+  if [ "$1" == 'bootstrap' ]; then
+    download_git $REPO $path
+  fi
+
+  BRANCHES=$(git --git-dir=$path branch | sed 's/\*//')
+
+  for branch in $BRANCHES
   do
-    parse_makefile $makefile
+    git --git-dir=$path --work-tree=. checkout $branch $name.make 2> /dev/null
+
+    if [ -f $name.make ]; then
+      parse_makefile $name.make $DOWNLOADED
+      DOWNLOADED="$DOWNLOADED $RETURN"
+      rm -rf $name.make
+    fi
   done
+
+  REPOS_DONE="$REPOS_DONE $REPO"
+}
+
+# Bootstrap for repositories specified on command line
+bootstrap() {
+  for REPO in $REPOS
+  do
+    process_repo bootstrap
+  done
+}
+
+# Traverse downloaded repositories for makefiles
+recursive_makefiles() {
+  for REPO in $DOWNLOADED
+  do
+    if not_up_to_date $REPO $REPOS_DONE ; then
+      process_repo
+    fi
+  done
+}
+
+
+main() {
+  REPOS="$@"
+  bootstrap
+  recursive_makefiles
 }
 
 main "$@"
