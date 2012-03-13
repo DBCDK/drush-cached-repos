@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# © 2012 DBC A/S and TING.Community
+# Version 1.0.0
+
 # Escaping special characters for grep
 escape() {
   echo "$1" | sed 's/\([\.\$\*]\)/\\\1/g'
