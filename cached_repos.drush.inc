@@ -3,9 +3,9 @@
  * @file
  * Utilities for Drush. Release build scripts.
  *
- * © 2012 DBC A/S and TING.Community
+ * © 2012 DBC A/S
  *
- * Version: 1.0.0.
+ * Version: 1.1.0.
  */
 
 /**
@@ -52,20 +52,25 @@ function _cached_repos_make_validate_info($info) {
     return $info;
   }
 
-  // @todo more than projects
-  foreach ($info['projects'] as $name => &$spec) {
-    // Only consider git repositories. @todo more than git repositories
-    if (!empty($spec['download']['type']) && $spec['download']['type'] == 'git') {
-      $oldurl = $spec['download']['url'];
-      drush_shell_exec('echo %s | sed -e %s', $spec['download']['url'], $translate);
-      $output = drush_shell_exec_output();
-      $spec['download']['url'] = $baseurl . '/' . $output[0];
+  $keys = array('libraries', 'projects',);
 
-      drush_log(dt('Using @newurl instead of @oldurl.',
-          array(
-            '@oldurl' => $oldurl,
-            '@newurl' => $spec['download']['url'],
-          )), 'ok');
+  foreach ($keys as $key) {
+    if (is_array($info[$key])) {
+      foreach ($info[$key] as $name => &$spec) {
+        // Only consider git repositories. @todo more than git repositories
+        if (!empty($spec['download']['type']) && $spec['download']['type'] == 'git') {
+          $oldurl = $spec['download']['url'];
+          drush_shell_exec('echo %s | sed -e %s', $spec['download']['url'], $translate);
+          $output = drush_shell_exec_output();
+          $spec['download']['url'] = $baseurl . '/' . $output[0];
+
+          drush_log(dt('Using @newurl instead of @oldurl.',
+              array(
+                '@oldurl' => $oldurl,
+                '@newurl' => $spec['download']['url'],
+              )), 'ok');
+        }
+      }
     }
   }
 
