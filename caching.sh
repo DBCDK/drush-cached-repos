@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# © 2012 DBC A/S and TING.Community
-# Version 1.0.0
+# © 2012 DBC A/S
+# Version 1.1.0
 
 # Escaping special characters for grep
 escape() {
